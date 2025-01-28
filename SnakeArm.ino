@@ -14,13 +14,14 @@
 #endif
 
 // Pin Definitions
-const int RETRACT_LIMIT_PIN = 2;     // Limit switch for retracted position
-const int EXTEND_LIMIT_PIN = 3;      // Limit switch for extended position
-const int BALL_SENSOR_PIN = 4;       // Ball detection sensor
-const int MOUTH_SOLENOID_PIN = 5;    // Solenoid controlling mouth
-const int ARM_SOLENOID_PIN = 6;      // Solenoid controlling arm movement
-const int BALL_FLAP_SOLENOID_PIN = 7;// Solenoid controlling ball flap
-#define DATA_PIN 8                   // LED data pin
+const int RETRACT_LIMIT_PIN = 12;     // Limit switch for retracted position
+const int EXTEND_LIMIT_PIN = 10;      // Limit switch for extended position
+const int BALL_SENSOR_PIN = 8;       // Ball detection sensor
+
+const int MOUTH_SOLENOID_PIN = 19;     // Solenoid controlling mouth
+const int ARM_SOLENOID_PIN = 17;       // Solenoid controlling arm movement
+const int BALL_FLAP_SOLENOID_PIN = 15; // Solenoid controlling ball flap
+#define DATA_PIN 3                     // LED data pin
 
 // FastLED definitions
 #define LED_TYPE    WS2812B
