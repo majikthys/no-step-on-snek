@@ -103,7 +103,7 @@ void extendSequence() {
   log("extendSequence");
   
   // 1. Close mouth
-  digitalWrite(MOUTH_SOLENOID_PIN, HIGH);
+  digitalWrite(MOUTH_SOLENOID_PIN, LOW);
   
   // 2. Turn on LEDs
   turnOnLEDs();
@@ -114,7 +114,7 @@ void extendSequence() {
   // 4. Wait for extend to complete
   while(!extendLimit.isPressed()) {
     extendLimit.update();
-    // Always run pride() when extending - no need for ledsOn check
+    // Always run pride() when extending 
     pride();
     FastLED.show();
   }
@@ -127,7 +127,7 @@ void retractSequence() {
   turnOffLEDs();
   
   // 6. Retract ball flap
-  digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);
+  digitalWrite(BALL_FLAP_SOLENOID_PIN, LOW);
   delay(BALL_FLAP_DELAY);
   
   // 7. Retract arm
@@ -139,12 +139,15 @@ void retractSequence() {
   }
   
   // 9. Extend ball flap
-  digitalWrite(BALL_FLAP_SOLENOID_PIN, LOW);
-  delay(BALL_FLAP_DELAY);
+  digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);
   
   // 10. Open mouth
-  digitalWrite(MOUTH_SOLENOID_PIN, LOW);
-  delay(MOUTH_DELAY);
+  digitalWrite(MOUTH_SOLENOID_PIN, HIGH);
+  if (BALL_FLAP_DELAY > MOUTH_DELAY) {
+    delay(BALL_FLAP_DELAY);
+  } else {
+    delay(MOUTH_DELAY);
+  }
 }
 
 void setup() {
@@ -184,11 +187,7 @@ void setup() {
 
   // Initial startup sequence
   if (!retractLimit.isPressed()) {
-    log("Starting initial sequence...");
-    
-    // 0. Extend ball flap
-    digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);
-    delay(BALL_FLAP_DELAY);
+    log("NOT RETRACTED? EXTEND AND RETRACT...");
     
     extendSequence();
     retractSequence();
@@ -203,10 +202,10 @@ void setup() {
     digitalWrite(ARM_SOLENOID_PIN, LOW);
     
     // 3. Extend ball flap
-    digitalWrite(BALL_FLAP_SOLENOID_PIN, LOW);
-    
-    // 4. Open mouth
-    digitalWrite(MOUTH_SOLENOID_PIN, LOW);
+    digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);
+
+    // 4. extend mouth
+    digitalWrite(MOUTH_SOLENOID_PIN, HIGH);
     delay(MOUTH_DELAY);
   }
 }
