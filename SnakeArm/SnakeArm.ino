@@ -13,15 +13,16 @@
 #error "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
-// Pin Definitions
-const int RETRACT_LIMIT_PIN = 12;     // Limit switch for retracted position
-const int EXTEND_LIMIT_PIN = 10;      // Limit switch for extended position
-const int BALL_SENSOR_PIN = 8;       // Ball detection sensor
 
-const int MOUTH_SOLENOID_PIN = 19;     // Solenoid controlling mouth
-const int ARM_SOLENOID_PIN = 17;       // Solenoid controlling arm movement
-const int BALL_FLAP_SOLENOID_PIN = 15; // Solenoid controlling ball flap
-#define DATA_PIN 3                     // LED data pin
+// Pin Definitions
+const int RETRACT_LIMIT_PIN = 2;     // Limit switch for retracted position
+const int EXTEND_LIMIT_PIN = 3;      // Limit switch for extended position
+const int BALL_SENSOR_PIN = 11;       // Ball detection sensor
+
+const int MOUTH_SOLENOID_PIN = 7;     // Solenoid controlling mouth
+const int ARM_SOLENOID_PIN = 9;       // Solenoid controlling arm movement
+const int BALL_FLAP_SOLENOID_PIN = 10; // Solenoid controlling ball flap
+#define DATA_PIN 6                     // LED data pin
 
 // FastLED definitions
 #define LED_TYPE    WS2812B
@@ -46,6 +47,63 @@ void log(const char* message) {
     Serial.println(message);
   #endif
 }
+
+void debug_inputs() {
+  while (true) {
+    retractLimit.update();
+    extendLimit.update();
+    ballSensor.update();
+
+    if (retractLimit.pressed()) {
+      log("Retract Limit: pressed");
+    }
+
+    if (extendLimit.pressed()) {
+      log("Extend Limit: pressed");
+    }
+
+    if (ballSensor.pressed()) {
+      log("Ball Sensor: pressed");
+    }
+  }
+}
+
+void debug_outputs() {
+  // Test ARM_SOLENOID
+  Serial.println("Activating ARM_SOLENOID");
+  digitalWrite(ARM_SOLENOID_PIN, LOW);    // Active
+  delay(1000);
+  digitalWrite(ARM_SOLENOID_PIN, HIGH);   // Inactive
+  delay(1000);
+
+  // Test MOUTH_SOLENOID
+  Serial.println("Activating MOUTH_SOLENOID");
+  digitalWrite(MOUTH_SOLENOID_PIN, LOW);  // Active
+  delay(1000);
+  digitalWrite(MOUTH_SOLENOID_PIN, HIGH); // Inactive
+  delay(1000);
+
+  // Test BALL_FLAP_SOLENOID
+  Serial.println("Activating BALL_FLAP_SOLENOID");
+  digitalWrite(BALL_FLAP_SOLENOID_PIN, LOW);  // Active
+  delay(1000);
+  digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH); // Inactive
+  delay(1000);
+  
+  // TEST FASTLED
+  log("TEST FASTLED");
+  turnOnLEDs();
+  // 1000 second loop
+  unsigned long start_time = millis();
+  while (millis() - start_time < 1000) {
+    pride();
+    FastLED.show();
+  }
+  turnOffLEDs();
+  
+  Serial.println("------- Cycle Complete -------\n");
+}
+
 
 // This function draws rainbows with an ever-changing,
 // widely-varying set of parameters.
@@ -102,14 +160,14 @@ void turnOffLEDs() {
 void extendSequence() {
   log("extendSequence");
   
-  // 1. Close mouth
-  digitalWrite(MOUTH_SOLENOID_PIN, LOW);
+  // 1. Retract mouth
+  digitalWrite(MOUTH_SOLENOID_PIN, HIGH);  // HIGH to retract
   
   // 2. Turn on LEDs
   turnOnLEDs();
   
   // 3. Extend arm
-  digitalWrite(ARM_SOLENOID_PIN, HIGH);
+  digitalWrite(ARM_SOLENOID_PIN, LOW);     // LOW to extend
   
   // 4. Wait for extend to complete
   while(!extendLimit.isPressed()) {
@@ -118,6 +176,8 @@ void extendSequence() {
     pride();
     FastLED.show();
   }
+
+  log("EXTEND SEQUENCE COMPLETE");
 }
 
 void retractSequence() {
@@ -127,27 +187,31 @@ void retractSequence() {
   turnOffLEDs();
   
   // 6. Retract ball flap
-  digitalWrite(BALL_FLAP_SOLENOID_PIN, LOW);
+  digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);  // HIGH to retract
   delay(BALL_FLAP_DELAY);
   
   // 7. Retract arm
-  digitalWrite(ARM_SOLENOID_PIN, LOW);
+  digitalWrite(ARM_SOLENOID_PIN, HIGH);        // HIGH to retract
   
   // 8. Wait for retract to complete
   while(!retractLimit.isPressed()) {
     retractLimit.update();
   }
   
+  log("RETRACT LIMIT HIT");
+
   // 9. Extend ball flap
-  digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);
+  digitalWrite(BALL_FLAP_SOLENOID_PIN, LOW);   // LOW to extend
   
   // 10. Open mouth
-  digitalWrite(MOUTH_SOLENOID_PIN, HIGH);
+  digitalWrite(MOUTH_SOLENOID_PIN, LOW);       // LOW to extend/open
   if (BALL_FLAP_DELAY > MOUTH_DELAY) {
     delay(BALL_FLAP_DELAY);
   } else {
     delay(MOUTH_DELAY);
   }
+
+  log("RETRACT SEQUENCE COMPLETE");
 }
 
 void setup() {
@@ -173,6 +237,11 @@ void setup() {
   pinMode(MOUTH_SOLENOID_PIN, OUTPUT);
   pinMode(ARM_SOLENOID_PIN, OUTPUT);
   pinMode(BALL_FLAP_SOLENOID_PIN, OUTPUT);
+
+  // Set initial states - all retracted
+  digitalWrite(ARM_SOLENOID_PIN, HIGH);         // HIGH to retract
+  digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);   // HIGH to retract
+  digitalWrite(MOUTH_SOLENOID_PIN, HIGH);       // HIGH to retract
   
   // Configure FastLED
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS)
@@ -184,6 +253,17 @@ void setup() {
   retractLimit.update();
   extendLimit.update();
   ballSensor.update();
+  delay(DEBOUNCE_INTERVAL + 1);
+  retractLimit.update();
+  extendLimit.update();
+  ballSensor.update();
+
+  // #ifdef DEBUG
+  //   log("DEBUG LOOP");
+  //   while (true) {  
+  //     debug_inputs();
+  //   }
+  // #endif
 
   // Initial startup sequence
   if (!retractLimit.isPressed()) {
@@ -199,13 +279,13 @@ void setup() {
     turnOffLEDs();
     
     // 2. Retract arm
-    digitalWrite(ARM_SOLENOID_PIN, LOW);
+    digitalWrite(ARM_SOLENOID_PIN, HIGH);       // HIGH to retract
     
     // 3. Extend ball flap
-    digitalWrite(BALL_FLAP_SOLENOID_PIN, HIGH);
-
+    digitalWrite(BALL_FLAP_SOLENOID_PIN, LOW);  // LOW to extend
+    
     // 4. extend mouth
-    digitalWrite(MOUTH_SOLENOID_PIN, HIGH);
+    digitalWrite(MOUTH_SOLENOID_PIN, LOW);      // LOW to extend/open
     delay(MOUTH_DELAY);
   }
 }

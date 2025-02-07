@@ -20,7 +20,7 @@ Bounce2::Button handDetector = Bounce2::Button();
 const unsigned long SNAKE_ACTIVATION_DURATION = 750;  // How long to keep everything activated in ms
 
 const unsigned long ACTIVATION_DURATION = 2200;  // How long to keep everything activated in ms
-const unsigned long DEBOUNCE_INTERVAL = 5;       // Debounce interval in ms
+const unsigned long DEBOUNCE_INTERVAL = 2;       // Debounce interval in ms
 
 void log(const char* message) {
   #ifdef DEBUG
